@@ -15,7 +15,7 @@ import qualified Graphics.Rendering.OpenGL.GL as GL
 main :: IO ()
 main = do SDL.init [SDL.InitTimer, SDL.InitVideo]
           SDL.setVideoMode 800 800 32 [SDL.OpenGL]
-          gameLoop =<< return (newGame)
+          gameLoop =<< return newGame
           SDL.quit
           
 -- | Reads all pending events from SDL's queue.
@@ -51,7 +51,7 @@ emptyLevel sz = Level sz (replicate sz (replicate sz Dirt))
 updateGame :: [SDLKey] -> Game -> Game
 updateGame ks g = g { player = clamp  (size $ level g) $  foldr movePlayer (player g) (getMoves ks) }
                   where clamp n (x,y) = (max 0 $ min (n-1) x, max 0 $ min (n-1) y) --oh god
-                        getMoves = catMaybes . (map getMove)
+                        getMoves = catMaybes . map getMove
                         
 getMove :: SDLKey -> Maybe (Int,Int)
 getMove SDLK_DOWN  = Just ( 0, 1)
