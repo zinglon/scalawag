@@ -6,6 +6,10 @@
 --}
 import Control.Applicative
 import Control.Monad
+import Control.Concurrent
+import Control.Concurrent.STM
+import Control.Concurrent.STM.TChan
+import Control.Concurrent.STM.TVar
 import Data.Maybe
 import Graphics.DrawingCombinators
 import qualified Graphics.UI.SDL as SDL
@@ -16,9 +20,33 @@ import Vec
 main :: IO ()
 main = do SDL.init [SDL.InitTimer, SDL.InitVideo]
           SDL.setVideoMode 800 800 32 [SDL.OpenGL]
-          gameLoop newGame
+          inputRef <- newTChanIO
+          gameRef <- newTVarIO newGame
+          quitRef <- newTVarIO False
+          forkIO . forever . atomically $ updateStuff inputRef gameRef quitRef
+          renderStuff inputRef gameRef quitRef
           SDL.quit
-          
+
+updateStuff i g q = do e <- readTChan i
+                       when (e == SDL.Quit) $ writeTVar q True
+                       gs <- readTVar g
+                       let gs' = updateGame (mapMaybe keypresses [e]) gs
+                       writeTVar g gs'
+
+renderStuff i g q = do evs <- newEvents
+                       atomically $ mapM_ (writeTChan i) evs
+                       gs <- atomically $ readTVar g
+                       GL.clear [GL.ColorBuffer]
+                       clearRender $ renderGame gs
+                       SDL.glSwapBuffers
+                       done <- atomically $ readTVar q
+                       if done 
+                         then return () 
+                         else do SDL.delay 20 
+                                 renderStuff i g q
+
+
+
 -- | Reads all pending events from SDL's queue.
 newEvents :: IO [SDL.Event]
 newEvents = moreEvents =<< SDL.pollEvent
@@ -28,14 +56,6 @@ newEvents = moreEvents =<< SDL.pollEvent
 keypresses :: SDL.Event -> Maybe SDLKey
 keypresses (SDL.KeyDown sym) = Just $ SDL.symKey sym
 keypresses _ = Nothing
-
-gameLoop :: Game -> IO ()
-gameLoop gs = do evs <- newEvents
-                 let gs' = updateGame (mapMaybe keypresses evs) gs
-                 GL.clear [GL.ColorBuffer]
-                 clearRender $ renderGame gs'
-                 SDL.glSwapBuffers
-                 unless (any (== SDL.Quit) evs) (SDL.delay 20 >> gameLoop gs')
                  
 data Terrain = Dirt | Wall deriving (Eq, Ord, Show, Read)
 
