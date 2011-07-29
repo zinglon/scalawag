@@ -11,6 +11,7 @@ import Graphics.DrawingCombinators
 import qualified Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Keysym
 import qualified Graphics.Rendering.OpenGL.GL as GL
+import Vec
 
 main :: IO ()
 main = do SDL.init [SDL.InitTimer, SDL.InitVideo]
@@ -42,46 +43,39 @@ data Level = Level { size    :: Int
                    , terrain :: [[Terrain]] 
                    } deriving (Eq, Ord, Show, Read)
 
-data Game = Game { player :: (Int,Int)
+data Game = Game { player :: Pt2 Int
                  , level  :: Level 
                  } deriving (Eq, Ord, Show, Read)
 
 newGame :: Game
-newGame = Game (0,0) (emptyLevel 9)
+newGame = Game 0 (emptyLevel 9)
 
 emptyLevel :: Int -> Level
 emptyLevel sz = Level sz (replicate sz (replicate sz Dirt))
 
 updateGame :: [SDLKey] -> Game -> Game
-updateGame ks g = g { player = clampPlayer $ foldr movePlayer (player g) playerMoves }
+updateGame ks g = g { player = clampToLevel <$> player g + sum playerMoves }
   where clampToLevel = clamp 0 (subtract 1 . size $ level g)
-        clampPlayer (x,y) = (clampToLevel x, clampToLevel y)
         playerMoves = mapMaybe getMove ks
 
 clamp lb ub = max lb . min ub
 
-getMove :: SDLKey -> Maybe (Int,Int)
-getMove SDLK_DOWN  = Just ( 0, 1)
-getMove SDLK_UP    = Just ( 0,-1)
-getMove SDLK_LEFT  = Just (-1, 0)
-getMove SDLK_RIGHT = Just ( 1, 0)
+getMove :: SDLKey -> Maybe (Pt2 Int)
+getMove SDLK_DOWN  = Just $ pt2 0 1
+getMove SDLK_UP    = Just $ pt2 0 (-1)
+getMove SDLK_LEFT  = Just $ pt2 (-1) 0
+getMove SDLK_RIGHT = Just $ pt2 1 0
 getMove _          = Nothing
-
-movePlayer :: (Int,Int) -> (Int,Int) -> (Int,Int)
-movePlayer (x1,y1) (x2,y2) = (x1+x2, y1+y2)
 
 renderGame :: Game -> Image Any
 renderGame g = translate(-1,1) 
-           %% uncurry scale (divideR2 (2, -2) . toDamnR2 $ levelDim g)
+           %% uncurry scale (toPair $ pt2 2 (-2) / (fromIntegral <$> levelDim g))
            %% doCrap
   where doCrap = drawPlayer
-        drawPlayer = (translate . toDamnR2 $ player g) 
+        drawPlayer = (translate . toPair $ fromIntegral <$> player g) 
                   %% tint (Color 0 1 0 1) (convexPoly [(0,0), (0,1), (1,1), (1,0)])
 
 levelSize = size . level
-levelDim g = (levelSize g, levelSize g)
+levelDim = pure . levelSize
 
-toDamnR2 :: Integral a => (a,a) -> R2
-toDamnR2 (x,y) = (fromIntegral x, fromIntegral y)
 
-divideR2 (x1, y1) (x2, y2) = (x1 / x2, y1 / y2)
