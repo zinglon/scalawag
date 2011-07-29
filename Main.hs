@@ -4,7 +4,6 @@
 
     License: WTFPL
 --}
-import Prelude
 import Control.Applicative
 import Control.Monad
 import Data.Maybe
