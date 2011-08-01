@@ -43,6 +43,10 @@ keypresses :: SDL.Event -> Maybe SDLKey
 keypresses (SDL.KeyDown sym) = Just $ SDL.symKey sym
 keypresses _ = Nothing
 
+translateEvent :: SDL.Event -> SDL.Event
+translateEvent (SDL.KeyDown sym)
+  | (SDL.symKey sym) == SDLK_ESCAPE = SDL.Quit
+translateEvent e = e
 
 -- Runs the given action, returns the number of ticks elapsed
 timeAction :: IO () -> IO Ticks
@@ -69,7 +73,7 @@ renderGame g = translate (pt2 (-1) 1)
   where doCrap = mconcat $ drawPlayer : drawField
         drawField = map drawDirt $ 
                     concat $ 
-                    zipWith (\y t -> map (\(x,d) -> (pt2 x y, d)) t) [0..] (map (zip [0..]) $ (terrain.level) g)
+                    zipWith (\y t -> zipWith (\x d -> (pt2 x y, d)) [0..] t) [0..] $ (terrain.level) g
         drawDirt (pos, dirt) = translate pos %% Draw.tint (dirtColor dirt) (rectangle (0,0) (1,1))  
         dirtColor Dirt = Color 0.5 0.25 0.1 1
         dirtColor Wall = Color 0.25 0.25 0.25 1
