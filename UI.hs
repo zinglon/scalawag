@@ -34,9 +34,8 @@ initSDL = do SDL.init [SDL.InitTimer, SDL.InitVideo]
              return ()
 
 newEvents :: IO [SDL.Event]
-newEvents = moreEvents =<< SDL.pollEvent
-    where moreEvents SDL.NoEvent = return []
-          moreEvents ev = (ev:) <$> newEvents
+newEvents = repeatWhileM (/= SDL.NoEvent) SDL.pollEvent
+
 
 keypresses :: SDL.Event -> Maybe SDLKey
 keypresses (SDL.KeyDown sym) = Just $ SDL.symKey sym

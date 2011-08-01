@@ -37,6 +37,10 @@ clamp :: (Ord a) => a -> a -> a -> a
 clamp lb ub = max lb . min ub
 
 
+maybeIf :: (a -> Bool) -> a -> Maybe a
+maybeIf p x = if p x then Just x else Nothing
+
+
 -- iterates the given function until the termination check returns true, 
 -- starting with the given initial value
 iterWhileM :: (Monad m) => (a -> m a) -> m Bool -> a -> m a
@@ -44,4 +48,8 @@ iterWhileM lb q x = do x' <- lb x
                        done <- q
                        if done then return x' else iterWhileM lb q x'
 
+repeatWhileM :: (Functor m, Monad m) => (a -> Bool) -> m a -> m [a]
+repeatWhileM p mx = step =<< mx
+    where step x | p x       = (x:) <$> repeatWhileM p mx
+                 | otherwise = return []
 
