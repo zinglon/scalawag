@@ -9,6 +9,7 @@ import Prelude hiding (and)
 import Control.Applicative
 import Data.Foldable
 import Data.List
+import Data.Array
 
 type Pt2 = Vec Two
 type Pt3 = Vec Three
@@ -21,6 +22,12 @@ pt3 x y z = x :*: y :*: z :*: Nil
 
 toPair :: Pt2 a -> (a, a)
 toPair (x :*: y :*: Nil) = (x, y)
+
+
+instance (Ix a) => Ix (Pt2 a) where
+    range (l, u) = map (uncurry pt2) $ range (toPair l, toPair u)
+    index (l, u) i = index (toPair l, toPair u) (toPair i)
+    inRange (l, u) i = inRange (toPair l, toPair u) (toPair i)
 
 
 data Z

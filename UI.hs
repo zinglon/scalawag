@@ -11,6 +11,7 @@ import Control.Concurrent.STM.TChan
 import Control.Concurrent.STM.TVar
 import Control.Concurrent.STM.TMVar
 import Data.Monoid
+import Data.Array
 
 import qualified Graphics.DrawingCombinators as Draw
 import Graphics.DrawingCombinators ((%%), Color(..), Any(..), R, Affine, R2)
@@ -70,9 +71,9 @@ renderGame g = translate (pt2 (-1) 1)
            %% scale (pt2 2 (-2) / (fromIntegral <$> levelDim g))
            %% doCrap
   where doCrap = mconcat $ drawPlayer : drawField
-        drawField = map drawDirt . concat $ zipWith zip gridPoints (terrain . level $ g)
-        gridPoints = map (zipWith pt2 [0..] . repeat) [0..]
-        drawDirt (pos, dirt) = translate pos %% Draw.tint (dirtColor dirt) (rectangle (0,0) (1,1))  
+        drawField = map drawDirt . assocs . terrain . level $ g
+        drawDirt (pos, dirt) = translate (fromIntegral <$> pos) 
+                            %% Draw.tint (dirtColor dirt) (rectangle (0,0) (1,1))
         dirtColor Dirt = Color 0.5 0.25 0.1 1
         dirtColor Wall = Color 0.25 0.25 0.25 1
         drawPlayer = (translate $ fromIntegral <$> player g) 
