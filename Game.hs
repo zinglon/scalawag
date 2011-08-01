@@ -18,7 +18,7 @@ newGame :: Game
 newGame = Game 0 (emptyLevel 9)
 
 emptyLevel :: Int -> Level
-emptyLevel sz = Level sz (replicate sz (replicate sz Dirt))
+emptyLevel sz = Level sz $ (replicate sz Wall) : (replicate (sz-1) (replicate sz Dirt))
 
 levelSize :: Game -> Int
 levelSize = size . level

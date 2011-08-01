@@ -34,7 +34,7 @@ updateStuff i g q = do e <- readTChan i
 
 
 getEvents :: TChan Event -> IO ()
-getEvents i = atomically . mapM_ (writeTChan i) =<< newEvents
+getEvents i = atomically . mapM_ (writeTChan i) =<< (map translateEvent) <$> newEvents
 
 renderFrame :: TVar Game -> IO ()
 renderFrame g = do gs <- atomically $ readTVar g
