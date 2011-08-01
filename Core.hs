@@ -3,6 +3,7 @@ module Core ( module Control.Applicative
             , Arrow(..), ArrowChoice(..), (>>>), (<<<)
             , catMaybes, mapMaybe, fromMaybe, isJust, isNothing, maybeToList
             , Word32(..)
+            , module Data.Record.Label
             , module Core
             ) where
 
@@ -11,6 +12,9 @@ import Control.Arrow
 import Control.Monad
 import Data.Maybe
 import Data.Word
+
+import Data.Record.Label
+
 
 data Void
 

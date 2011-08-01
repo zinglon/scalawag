@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeOperators #-}
 module Game where
 
 import Data.Array
@@ -8,13 +10,15 @@ import Util
 
 data Terrain = Dirt | Wall deriving (Eq, Ord, Show, Read)
 
-data Level = Level { size    :: Int
-                   , terrain :: Array (Pt2 Int) Terrain
+data Level = Level { _size    :: Int
+                   , _terrain :: Array (Pt2 Int) Terrain
                    } deriving (Eq, Ord, Show, Read)
 
-data Game = Game { player :: Pt2 Int
-                 , level  :: Level 
+data Game = Game { _player :: Pt2 Int
+                 , _level  :: Level 
                  } deriving (Eq, Ord, Show, Read)
+
+$(mkLabels [''Level, ''Game])
 
 newGame :: Game
 newGame = Game 0 (emptyLevel 9)
@@ -24,10 +28,10 @@ emptyLevel sz = Level sz (listArray (minPt, maxPt) (cycle $ Wall : replicate (sz
   where minPt = pt2 0 0
         maxPt = pt2 (sz - 1) (sz - 1)
 
-levelSize :: Game -> Int
-levelSize = size . level
+levelSize :: Game :-> Int
+levelSize = level >>> size
 
 levelDim :: Game -> Pt2 Int
-levelDim = pure . levelSize
+levelDim = pure . getL levelSize
 
 

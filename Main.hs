@@ -8,6 +8,7 @@ import Control.Concurrent
 import Control.Concurrent.STM
 import Control.Concurrent.STM.TChan
 import Control.Concurrent.STM.TVar
+
 import Core
 import Game
 import Vec
@@ -52,8 +53,8 @@ eventLoop ft acts dt = do when (ft > dt) $ delay (ft - dt)
 
 
 updateGame :: [SDLKey] -> Game -> Game
-updateGame ks g = g { player = clampToLevel <$> player g + sum playerMoves }
-  where clampToLevel = clamp 0 (subtract 1 . size $ level g)
+updateGame ks g = modL player (fmap clampToLevel . (+ sum playerMoves)) g 
+  where clampToLevel = clamp 0 (subtract 1 $ getL levelSize g)
         playerMoves = mapMaybe getMove ks
 
 getMove :: SDLKey -> Maybe (Pt2 Int)
