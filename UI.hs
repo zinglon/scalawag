@@ -24,6 +24,8 @@ import Game
 import Core
 import Util
 
+data UIAction = QuitGame deriving (Eq, Ord, Show, Read)
+
 initUI :: IO ()
 initUI = initSDL
 
@@ -38,15 +40,17 @@ initSDL = do SDL.init [SDL.InitTimer, SDL.InitVideo]
 newEvents :: IO [SDL.Event]
 newEvents = repeatWhileM (/= SDL.NoEvent) SDL.pollEvent
 
+translateEvent :: SDL.Event -> Maybe (Either UIAction GameAction)
+translateEvent (SDL.KeyDown key) = translateKey $ symKey key
+translateEvent _ = Nothing
 
-keypresses :: SDL.Event -> Maybe SDLKey
-keypresses (SDL.KeyDown sym) = Just $ SDL.symKey sym
-keypresses _ = Nothing
-
-translateEvent :: SDL.Event -> SDL.Event
-translateEvent (SDL.KeyDown sym)
-  | (SDL.symKey sym) == SDLK_ESCAPE = SDL.Quit
-translateEvent e = e
+translateKey :: SDL.SDLKey -> Maybe (Either UIAction GameAction)
+translateKey SDLK_DOWN   = Just . Right . Move $ pt2 0 1
+translateKey SDLK_UP     = Just . Right . Move $ pt2 0 (-1)
+translateKey SDLK_LEFT   = Just . Right . Move $ pt2 (-1) 0
+translateKey SDLK_RIGHT  = Just . Right . Move $ pt2 1 0
+translateKey SDLK_ESCAPE = Just . Left $ QuitGame
+translateKey _ = Nothing
 
 -- Runs the given action, returns the number of ticks elapsed
 timeAction :: IO () -> IO Ticks

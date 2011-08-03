@@ -22,20 +22,22 @@ main = do initUI
           game <- newTVarIO newGame
           quit <- newTVarIO False
           forkIO . forever . atomically $ updateStuff input game quit
-          let actions = getEvents input >> renderFrame game
+          let actions = getEvents input quit >> renderFrame game
           beginLoop 20 actions quit
           killUI
 
-updateStuff :: TChan Event -> TVar Game -> TVar Bool -> STM ()
-updateStuff i g q = do e <- readTChan i
-                       when (e == Quit) $ writeTVar q True
+updateStuff :: TChan GameAction -> TVar Game -> TVar Bool -> STM ()
+updateStuff i g q = do e <- readTChan i                       
                        gs <- readTVar g
-                       let gs' = updateGame (mapMaybe keypresses [e]) gs
+                       let gs' = updateGame e gs
                        writeTVar g gs'
 
-
-getEvents :: TChan Event -> IO ()
-getEvents i = atomically . mapM_ (writeTChan i) =<< (map translateEvent) <$> newEvents
+getEvents :: TChan GameAction -> TVar Bool -> IO ()
+getEvents i q = do evts <- (mapMaybe translateEvent) <$> newEvents 
+                   mapM_ process evts 
+                where process = either processUIEvt processGameEvt
+                      processUIEvt e = when (e == QuitGame) (atomically $ writeTVar q True)
+                      processGameEvt = atomically . writeTChan i 
 
 renderFrame :: TVar Game -> IO ()
 renderFrame g = do gs <- atomically $ readTVar g
@@ -51,16 +53,7 @@ eventLoop :: Ticks -> IO () -> Ticks -> IO Ticks
 eventLoop ft acts dt = do when (ft > dt) $ delay (ft - dt)
                           timeAction acts
 
-
-updateGame :: [SDLKey] -> Game -> Game
-updateGame ks g = modL player (fmap clampToLevel . (+ sum playerMoves)) g 
+updateGame :: GameAction -> Game -> Game
+updateGame (Move pt) g = modL player (fmap clampToLevel . (+ pt)) g 
   where clampToLevel = clamp 0 (subtract 1 $ getL levelSize g)
-        playerMoves = mapMaybe getMove ks
-
-getMove :: SDLKey -> Maybe (Pt2 Int)
-getMove SDLK_DOWN  = Just $ pt2 0 1
-getMove SDLK_UP    = Just $ pt2 0 (-1)
-getMove SDLK_LEFT  = Just $ pt2 (-1) 0
-getMove SDLK_RIGHT = Just $ pt2 1 0
-getMove _          = Nothing
-
+updateGame _ g = g

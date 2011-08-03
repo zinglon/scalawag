@@ -1,5 +1,5 @@
 # build with SDL C wrapper for mac osx (see mainc.c)
-main: Main.hs
+main: *.hs
 	ghc --make Main.hs -o $@
 
 clean:

@@ -20,6 +20,10 @@ data Game = Game { _player :: Pt2 Int
 
 $(mkLabels [''Level, ''Game])
 
+data GameAction = Move (Pt2 Int)
+                | Wait
+                  deriving (Eq, Ord, Show, Read)
+
 newGame :: Game
 newGame = Game 0 (emptyLevel 9)
 
